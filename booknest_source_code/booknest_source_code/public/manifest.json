@@ -1,0 +1,24 @@
+{
+  "name": "BookNest - Social Reading & Streak Squad",
+  "short_name": "BookNest",
+  "description": "Track reading habits, set 20-minute focus timers, maintain streaks, and plan TBR collections with your squad.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#05070d",
+  "theme_color": "#00f2fe",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=192&auto=format&fit=crop&q=80",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=512&auto=format&fit=crop&q=80",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
