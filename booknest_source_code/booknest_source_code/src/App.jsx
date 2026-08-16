@@ -69,12 +69,18 @@ export default function App() {
         api.getLeaderboard()
       ]);
 
-      setBooks(booksRes.data || []);
-      setWishlist(wishRes.data || []);
-      setStats(statsRes.data || null);
-      setActivities(feedRes.data || []);
-      setLeaderboard(leadRes.data || []);
-      setCurrentUser(prev => prev ? { ...prev, stats: statsRes.data } : null);
+      const safeBooks = Array.isArray(booksRes?.data) ? booksRes.data : (Array.isArray(booksRes?.books) ? booksRes.books : []);
+      const safeWish = Array.isArray(wishRes?.data) ? wishRes.data : (Array.isArray(wishRes?.wishlist) ? wishRes.wishlist : []);
+      const safeStats = statsRes?.data || statsRes?.stats || null;
+      const safeFeed = Array.isArray(feedRes?.data) ? feedRes.data : (Array.isArray(feedRes?.activities) ? feedRes.activities : []);
+      const safeLead = Array.isArray(leadRes?.data) ? leadRes.data : (Array.isArray(leadRes?.leaderboard) ? leadRes.leaderboard : []);
+
+      setBooks(safeBooks);
+      setWishlist(safeWish);
+      setStats(safeStats);
+      setActivities(safeFeed);
+      setLeaderboard(safeLead);
+      setCurrentUser(prev => prev ? { ...prev, stats: safeStats } : null);
     } catch (err) {
       console.error("Error loading user data:", err);
     }

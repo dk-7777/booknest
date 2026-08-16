@@ -1,9 +1,9 @@
 // Bulletproof Universal API Client for BookNest
-// Works with Express Backend + Seamless Standalone Fallback for Vercel Static Hosting & Mobile APKs
+// Strict Email + Password Auth with Seamless Local Fallback
 
 import { initialData } from '../../server/seedData.js';
 
-const STORAGE_KEY = 'booknest_local_db_v2';
+const STORAGE_KEY = 'booknest_secure_db_v3';
 
 function getLocalDB() {
   try {
@@ -19,6 +19,11 @@ function getLocalDB() {
     }
   } catch (e) {}
   const fresh = JSON.parse(JSON.stringify(initialData));
+  // Set default passwords on seed data
+  fresh.users.forEach((u, i) => {
+    if (!u.email) u.email = `${u.username || 'user' + (i+1)}@gmail.com`;
+    if (!u.password) u.password = `pass_${u.username || 'user' + (i+1)}`;
+  });
   saveLocalDB(fresh);
   return fresh;
 }
@@ -54,7 +59,7 @@ async function serverRequest(endpoint, options = {}) {
 }
 
 export const api = {
-  // --- Auth & Account ---
+  // --- Strict Auth ---
   register: async (data) => {
     try {
       const res = await serverRequest('/auth/register', { method: 'POST', body: JSON.stringify(data) });
@@ -63,24 +68,69 @@ export const api = {
     } catch (e) {
       const db = getLocalDB();
       const cleanEmail = data.email.trim().toLowerCase();
-      const existing = db.users.find(u => u.email?.toLowerCase() === cleanEmail);
-      if (existing) throw new Error("An account with this email already exists. Please log in.");
+      const cleanUsername = (data.username || cleanEmail.split('@')[0]).trim().toLowerCase();
+
+      const existing = db.users.find(
+        u => u.email?.toLowerCase() === cleanEmail || u.username?.toLowerCase() === cleanUsername
+      );
+      if (existing) {
+        throw new Error("An account with this email already exists. Please sign in instead.");
+      }
       
       const newId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
       const newUser = {
         id: newId,
-        name: data.name || cleanEmail.split('@')[0],
-        username: data.username || cleanEmail.split('@')[0],
+        name: data.name.trim(),
+        username: cleanUsername,
         email: cleanEmail,
         password: data.password,
         avatar: data.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        bio: data.bio || "Ready to crush reading goals! 📚⚡",
+        bio: data.bio || "Ready to crush my reading goals! 📚⚡",
         readingGoalYear: Number(data.readingGoalYear) || 20,
         favoriteGenre: data.favoriteGenre || "Fiction",
         color: "#38bdf8",
         joinedDate: new Date().toISOString().split('T')[0]
       };
       db.users.push(newUser);
+
+      // Welcome book
+      const starterBook = {
+        id: `book-${Date.now()}-1`,
+        userId: newId,
+        title: "Atomic Habits",
+        author: "James Clear",
+        genre: "Productivity",
+        coverUrl: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=400&auto=format&fit=crop&q=80",
+        totalPages: 320,
+        currentPage: 25,
+        format: "Physical",
+        status: "currently_reading",
+        startDate: new Date().toISOString().split('T')[0],
+        createdAt: new Date().toISOString()
+      };
+      db.books.unshift(starterBook);
+
+      // Starter log to activate streak
+      db.readingLogs.push({
+        id: `log-${Date.now()}-1`,
+        userId: newId,
+        bookId: starterBook.id,
+        date: new Date().toISOString().split('T')[0],
+        pagesRead: 25,
+        minutesRead: 30,
+        note: "Joined BookNest! Day 1 streak ignited 🔥",
+        createdAt: new Date().toISOString()
+      });
+
+      db.activities.unshift({
+        id: `act-${Date.now()}`,
+        userId: newId,
+        type: "USER_JOINED",
+        bookTitle: "Atomic Habits",
+        details: `joined BookNest squad! Welcome ${newUser.name}! 🚀⚡`,
+        timestamp: new Date().toISOString()
+      });
+
       saveLocalDB(db);
       return { success: true, data: newUser, user: newUser };
     }
@@ -94,25 +144,14 @@ export const api = {
     } catch (e) {
       const db = getLocalDB();
       const q = data.emailOrUsername.toLowerCase().trim();
-      let user = db.users.find(u => u.email?.toLowerCase() === q || u.username?.toLowerCase() === q);
+      const user = db.users.find(
+        u => u.email?.toLowerCase() === q || u.username?.toLowerCase() === q || u.name?.toLowerCase() === q
+      );
       if (!user) {
-        user = {
-          id: `user-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-          name: q.split('@')[0],
-          username: q.split('@')[0],
-          email: q.includes('@') ? q : `${q}@gmail.com`,
-          password: data.password,
-          avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-          bio: "Ready to crush reading goals! 📚⚡",
-          readingGoalYear: 20,
-          favoriteGenre: "Fiction",
-          color: "#38bdf8",
-          joinedDate: new Date().toISOString().split('T')[0]
-        };
-        db.users.push(user);
-        saveLocalDB(db);
-      } else if (user.password && user.password !== data.password) {
-        throw new Error("Incorrect password. Please try again.");
+        throw new Error("No account found with this email. Click 'Register new account' below to create one!");
+      }
+      if (user.password && user.password !== data.password) {
+        throw new Error("Incorrect password. Please enter the password you registered with.");
       }
       return { success: true, data: user, user };
     }
@@ -127,7 +166,7 @@ export const api = {
       const db = getLocalDB();
       const cleanEmail = data.email.trim().toLowerCase();
       const user = db.users.find(u => u.email?.toLowerCase() === cleanEmail);
-      if (!user) throw new Error("No account found with this email.");
+      if (!user) throw new Error("No account found with this email address.");
       user.password = data.newPassword;
       saveLocalDB(db);
       return { success: true, data: user, user };
@@ -191,9 +230,10 @@ export const api = {
   getUsers: async () => {
     try {
       const res = await serverRequest('/users');
-      return { success: true, data: res.data || res.users || res, users: res.users || res.data || res };
+      const list = res.data || res.users || res;
+      return { success: true, data: Array.isArray(list) ? list : [], users: Array.isArray(list) ? list : [] };
     } catch (e) {
-      const users = getLocalDB().users;
+      const users = getLocalDB().users || [];
       return { success: true, data: users, users };
     }
   },
@@ -234,7 +274,7 @@ export const api = {
       });
       const res = await serverRequest(`/books?${query.toString()}`);
       const books = res.data || res.books || res;
-      return { success: true, data: books, books };
+      return { success: true, data: Array.isArray(books) ? books : [], books: Array.isArray(books) ? books : [] };
     } catch (e) {
       let books = getLocalDB().books || [];
       if (params.userId) books = books.filter(b => b.userId === params.userId);
@@ -306,7 +346,7 @@ export const api = {
       });
       const res = await serverRequest(`/reading-logs?${query.toString()}`);
       const logs = res.data || res.readingLogs || res;
-      return { success: true, data: logs, readingLogs: logs };
+      return { success: true, data: Array.isArray(logs) ? logs : [], readingLogs: Array.isArray(logs) ? logs : [] };
     } catch (e) {
       let logs = getLocalDB().readingLogs || [];
       if (params.userId) logs = logs.filter(l => l.userId === params.userId);
@@ -356,7 +396,7 @@ export const api = {
       });
       const res = await serverRequest(`/wishlist?${query.toString()}`);
       const list = res.data || res.wishlist || res;
-      return { success: true, data: list, wishlist: list };
+      return { success: true, data: Array.isArray(list) ? list : [], wishlist: Array.isArray(list) ? list : [] };
     } catch (e) {
       let items = getLocalDB().wishlist || [];
       if (params.userId) items = items.filter(w => w.userId === params.userId);
@@ -437,7 +477,7 @@ export const api = {
     try {
       const res = await serverRequest(`/feed?limit=${limit}`);
       const list = res.data || res.activities || res;
-      return { success: true, data: list, activities: list };
+      return { success: true, data: Array.isArray(list) ? list : [], activities: Array.isArray(list) ? list : [] };
     } catch (e) {
       const list = getLocalDB().activities || [];
       return { success: true, data: list, activities: list };
@@ -448,7 +488,7 @@ export const api = {
     try {
       const res = await serverRequest('/leaderboard');
       const list = res.data || res.leaderboard || res;
-      return { success: true, data: list, leaderboard: list };
+      return { success: true, data: Array.isArray(list) ? list : [], leaderboard: Array.isArray(list) ? list : [] };
     } catch (e) {
       const users = getLocalDB().users || [];
       return { success: true, data: users, leaderboard: users };

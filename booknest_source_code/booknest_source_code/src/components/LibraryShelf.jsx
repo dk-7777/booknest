@@ -17,27 +17,29 @@ export default function LibraryShelf({
   const [formatFilter, setFormatFilter] = useState('All');
   const [sortBy, setSortBy] = useState('updated'); // 'updated', 'title', 'progress', 'rating'
 
+  const safeBooks = books || [];
+
   // Extract unique genres
   const availableGenres = useMemo(() => {
-    const set = new Set(books.map(b => b.genre).filter(Boolean));
+    const set = new Set(safeBooks.map(b => b.genre).filter(Boolean));
     return ['All', ...Array.from(set)];
-  }, [books]);
+  }, [safeBooks]);
 
   // Filter & Sort Logic
   const filteredBooks = useMemo(() => {
-    return books.filter(b => {
+    return safeBooks.filter(b => {
       if (statusFilter !== 'All' && b.status !== statusFilter) return false;
       if (genreFilter !== 'All' && b.genre !== genreFilter) return false;
       if (formatFilter !== 'All' && b.format !== formatFilter) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const matchesTitle = b.title.toLowerCase().includes(q);
-        const matchesAuthor = b.author.toLowerCase().includes(q);
+        const matchesTitle = (b.title || '').toLowerCase().includes(q);
+        const matchesAuthor = (b.author || '').toLowerCase().includes(q);
         if (!matchesTitle && !matchesAuthor) return false;
       }
       return true;
     }).sort((a, b) => {
-      if (sortBy === 'title') return a.title.localeCompare(b.title);
+      if (sortBy === 'title') return (a.title || '').localeCompare(b.title || '');
       if (sortBy === 'progress') {
         const progA = a.totalPages > 0 ? a.currentPage / a.totalPages : 0;
         const progB = b.totalPages > 0 ? b.currentPage / b.totalPages : 0;
@@ -46,11 +48,11 @@ export default function LibraryShelf({
       if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
       return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
     });
-  }, [books, searchQuery, statusFilter, genreFilter, formatFilter, sortBy]);
+  }, [safeBooks, searchQuery, statusFilter, genreFilter, formatFilter, sortBy]);
 
-  const currentlyReadingCount = books.filter(b => b.status === 'currently_reading').length;
-  const completedCount = books.filter(b => b.status === 'completed').length;
-  const unreadCount = books.filter(b => b.status === 'unread').length;
+  const currentlyReadingCount = safeBooks.filter(b => b.status === 'currently_reading').length;
+  const completedCount = safeBooks.filter(b => b.status === 'completed').length;
+  const unreadCount = safeBooks.filter(b => b.status === 'unread').length;
 
   return (
     <div className="space-y-6">

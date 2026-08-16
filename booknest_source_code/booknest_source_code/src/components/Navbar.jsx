@@ -108,13 +108,13 @@ export default function Navbar({
               <div className="flex items-center gap-2 pl-1 border-l border-obsidian-750">
                 <div className="flex items-center gap-2 p-1 sm:px-2.5 sm:py-1 rounded-2xl bg-obsidian-900 border border-cyber-500/30">
                   <img
-                    src={currentUser.avatar}
-                    alt={currentUser.name}
+                    src={currentUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
+                    alt={currentUser.name || 'User'}
                     className="w-7 h-7 rounded-full object-cover border border-cyber-400/60"
                   />
                   <div className="hidden lg:block text-left">
                     <div className="text-xs font-bold text-white leading-none">
-                      {currentUser.name.split(' ')[0]}
+                      {(currentUser.name || currentUser.username || 'Friend').split(' ')[0]}
                     </div>
                     <div className="text-[10px] text-cyber-400 font-mono font-semibold mt-0.5">
                       {currentUser.stats?.currentStreak || 0}d streak 🔥
