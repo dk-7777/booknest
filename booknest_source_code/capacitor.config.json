@@ -1,0 +1,17 @@
+{
+  "appId": "com.booknest.readingapp",
+  "appName": "BookNest",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1500,
+      "backgroundColor": "#05070d",
+      "showSpinner": false
+    }
+  }
+}
