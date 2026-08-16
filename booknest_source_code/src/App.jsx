@@ -69,12 +69,18 @@ export default function App() {
         api.getLeaderboard()
       ]);
 
-      setBooks(booksRes.data || []);
-      setWishlist(wishRes.data || []);
-      setStats(statsRes.data || null);
-      setActivities(feedRes.data || []);
-      setLeaderboard(leadRes.data || []);
-      setCurrentUser(prev => prev ? { ...prev, stats: statsRes.data } : null);
+      const safeBooks = Array.isArray(booksRes?.data) ? booksRes.data : (Array.isArray(booksRes?.books) ? booksRes.books : []);
+      const safeWish = Array.isArray(wishRes?.data) ? wishRes.data : (Array.isArray(wishRes?.wishlist) ? wishRes.wishlist : []);
+      const safeStats = statsRes?.data || statsRes?.stats || null;
+      const safeFeed = Array.isArray(feedRes?.data) ? feedRes.data : (Array.isArray(feedRes?.activities) ? feedRes.activities : []);
+      const safeLead = Array.isArray(leadRes?.data) ? leadRes.data : (Array.isArray(leadRes?.leaderboard) ? leadRes.leaderboard : []);
+
+      setBooks(safeBooks);
+      setWishlist(safeWish);
+      setStats(safeStats);
+      setActivities(safeFeed);
+      setLeaderboard(safeLead);
+      setCurrentUser(prev => prev ? { ...prev, stats: safeStats } : null);
     } catch (err) {
       console.error("Error loading user data:", err);
     }
@@ -193,8 +199,21 @@ export default function App() {
     setActivities(feedRes.data || []);
   };
 
+  // If loading authentication state, show clean splash screen
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#05070d] flex flex-col items-center justify-center text-center p-4">
+        <div className="w-16 h-16 rounded-3xl overflow-hidden shadow-glow-cyan border border-cyber-400/40 p-1 bg-obsidian-950 mb-4 animate-pulse">
+          <img src="/logo.png" alt="BookNest Logo" className="w-full h-full object-cover rounded-[20px]" />
+        </div>
+        <h2 className="text-xl font-bold font-display text-white">BookNest ⚡</h2>
+        <p className="text-xs text-cyber-300 font-mono mt-1">Loading Your Private Library...</p>
+      </div>
+    );
+  }
+
   // If user is not authenticated, show full LoginPage
-  if (!currentUser && !isLoading) {
+  if (!currentUser) {
     return <LoginPage onLoginSuccess={handleLoginSuccess} api={api} />;
   }
 
