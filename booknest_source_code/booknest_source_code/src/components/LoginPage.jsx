@@ -51,7 +51,8 @@ export default function LoginPage({ onLoginSuccess, api }) {
     try {
       const res = await api.login({ emailOrUsername: emailOrUsername.trim(), password });
       confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
-      onLoginSuccess(res.data);
+      const user = res.data || res.user || res;
+      onLoginSuccess(user);
     } catch (err) {
       setErrorMessage(err.message || 'Login failed. Incorrect email or password.');
     } finally {
@@ -85,7 +86,8 @@ export default function LoginPage({ onLoginSuccess, api }) {
         favoriteGenre: regGenre
       });
       confetti({ particleCount: 110, spread: 80, origin: { y: 0.6 } });
-      onLoginSuccess(res.data);
+      const user = res.data || res.user || res;
+      onLoginSuccess(user);
     } catch (err) {
       setErrorMessage(err.message || 'Registration failed. This email may already be registered.');
     } finally {

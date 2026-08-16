@@ -8,8 +8,8 @@ export default function ShareAppModal({ isOpen, onClose }) {
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState('link'); // 'link', 'qr', 'store'
 
-  // Worldwide Public Live HTTPS URL
-  const globalUrl = 'https://ivory-brunette-treasurer-tsunami.trycloudflare.com';
+  // Permanent Worldwide Live HTTPS URL (Vercel Production)
+  const globalUrl = 'https://booknest-blush-psi.vercel.app';
   const primaryShareUrl = globalUrl;
 
   const handleCopy = (urlToCopy) => {
